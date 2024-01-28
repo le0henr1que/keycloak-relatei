@@ -1,0 +1,46 @@
+version: "3"
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+
+    volumes:
+      - ./themes/theme:/opt/keycloak/themes
+    command:
+      [
+        "-Dkeycloak.profile.feature.upload_scripts=enabled",
+        "-Dkeycloak.profile=preview",
+        "start-dev",
+        "--spi-theme-static-max-age=-1",
+        "--spi-theme-cache-themes=false",
+        "--spi-theme-cache-templates=false",
+      ]
+
+    environment:
+      - KEYCLOAK_PROFILE=preview
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KC_DB=mysql
+      - KC_DB_URL=jdbc:mysql://db:3306/keycloak
+      - KC_DB_USERNAME=root
+      - KC_DB_PASSWORD=<DBPASSWORD>
+      - KC_HOSTNAME=localhost
+    ports:
+      - 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0.30-debian
+    volumes:
+      - ./docker/db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=<DBPASSWORD>
+      - MYSQL_DATABASE=keycloak
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 20s
+      retries: 3
